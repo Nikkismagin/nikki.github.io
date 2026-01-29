@@ -1,5 +1,5 @@
-export const validationRules = {
-    name: /^[¿-ﬂ®][‡-ˇ∏]*(-[¿-ﬂ®][‡-ˇ∏]*)?$/u,
+Ôªøexport const validationRules = {
+    name: /^[–ê-–Ø–Å][–∞-—è—ë]*(-[–ê-–Ø–Å][–∞-—è—ë]*)?$/u,
     phone: /^\+7\d{10}$/,
     email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 };

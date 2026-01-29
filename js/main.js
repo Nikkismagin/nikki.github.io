@@ -1,14 +1,14 @@
-import { validateField, showError, clearError } from './validation.js';
+п»їimport { validateField, showError, clearError } from './validation.js';
 import { addParticipant, getParticipants, getParticipantsCount, getReportCount } from './participants.js';
 import { formatPhoneNumber, formatDate } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Инициализация компонентов
+    // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РєРѕРјРїРѕРЅРµРЅС‚РѕРІ
     initForm();
     initParticipantsList();
     updateCounters();
 
-    // Пример загрузки тестовых данных
+    // РџСЂРёРјРµСЂ Р·Р°РіСЂСѓР·РєРё С‚РµСЃС‚РѕРІС‹С… РґР°РЅРЅС‹С…
     if (getParticipantsCount() === 0) {
         loadSampleData();
     }
@@ -19,7 +19,7 @@ function initForm() {
     const reportToggle = document.querySelectorAll('input[name="hasReport"]');
     const topicField = document.getElementById('topicField');
 
-    // Обработчик переключателя доклада
+    // РћР±СЂР°Р±РѕС‚С‡РёРє РїРµСЂРµРєР»СЋС‡Р°С‚РµР»СЏ РґРѕРєР»Р°РґР°
     reportToggle.forEach(radio => {
         radio.addEventListener('change', function () {
             topicField.style.display = this.value === 'yes' ? 'block' : 'none';
@@ -29,7 +29,7 @@ function initForm() {
         });
     });
 
-    // Валидация в реальном времени
+    // Р’Р°Р»РёРґР°С†РёСЏ РІ СЂРµР°Р»СЊРЅРѕРј РІСЂРµРјРµРЅРё
     form.querySelectorAll('input[required]').forEach(input => {
         input.addEventListener('blur', function () {
             if (!validateField(this.name, this.value)) {
@@ -46,14 +46,14 @@ function initForm() {
         });
     });
 
-    // Отправка формы
+    // РћС‚РїСЂР°РІРєР° С„РѕСЂРјС‹
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        // Валидация всех полей
+        // Р’Р°Р»РёРґР°С†РёСЏ РІСЃРµС… РїРѕР»РµР№
         let isValid = true;
         const formData = new FormData(form);
 
-        // ... логика обработки формы
+        // ... Р»РѕРіРёРєР° РѕР±СЂР°Р±РѕС‚РєРё С„РѕСЂРјС‹
     });
 }
