@@ -13,6 +13,21 @@ body {
     min-height: 100vh;
 }
 
+.nav-links {
+    display: flex;
+    justify-content: Space-around;
+    list-style-type: none;
+    color: white;
+    margin-top: 5px; 
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
 .simple-nav {
     padding: 15px;
     background-color: rgba(0, 0, 0, 0.1);
