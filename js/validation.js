@@ -1,6 +1,6 @@
-﻿import { getCurrentDate, showError, clearError } from './utils.js';
+﻿import { getCurrentDate, showError, clearError, showSuccess, validateRussianName, validateEmailFormat } from './utils.js';
 
-export function validateLastName(lastName) {
+export function validateLastName() {
     const lastNameInput = document.getElementById('lastName');
     const lastNameValue = lastNameInput.value.trim();
 
@@ -9,17 +9,17 @@ export function validateLastName(lastName) {
         return false;
     }
 
-    // Проверка на русские буквы и дефис
-    if (!/^[А-ЯЁа-яё\-]+$/.test(lastNameValue)) {
+    if (!validateRussianName(lastNameValue)) {
         showError('lastNameError', 'Только русские буквы и дефис');
         return false;
     }
 
     clearError('lastNameError');
+    showSuccess('lastName');
     return true;
 }
 
-export function validateFirstName(firstName) {
+export function validateFirstName() {
     const firstNameInput = document.getElementById('firstName');
     const firstNameValue = firstNameInput.value.trim();
 
@@ -28,16 +28,17 @@ export function validateFirstName(firstName) {
         return false;
     }
 
-    if (!/^[А-ЯЁа-яё\-]+$/.test(firstNameValue)) {
+    if (!validateRussianName(firstNameValue)) {
         showError('firstNameError', 'Только русские буквы и дефис');
         return false;
     }
 
     clearError('firstNameError');
+    showSuccess('firstName');
     return true;
 }
 
-export function validateMiddleName(middleName) {
+export function validateMiddleName() {
     const middleNameInput = document.getElementById('middleName');
     const middleNameValue = middleNameInput.value.trim();
 
@@ -46,44 +47,43 @@ export function validateMiddleName(middleName) {
         return false;
     }
 
-    if (!/^[А-ЯЁа-яё\-]+$/.test(middleNameValue)) {
+    if (!validateRussianName(middleNameValue)) {
         showError('middleNameError', 'Только русские буквы и дефис');
         return false;
     }
 
     clearError('middleNameError');
+    showSuccess('middleName');
     return true;
 }
 
-export function validatePhone(phone) {
+export function validatePhone() {
     const phoneInput = document.getElementById('phone');
     let phoneValue = phoneInput.value.trim();
 
-    if (!phoneValue) {
+    if (!phoneValue || phoneValue === '+7') {
         showError('phoneError', 'Поле обязательно для заполнения');
         return false;
     }
 
-    // Удаляем все нецифровые символы для проверки
     const digitsOnly = phoneValue.replace(/\D/g, '');
 
-    // Проверяем, что есть хотя бы 11 цифр (с кодом страны)
     if (digitsOnly.length < 11) {
         showError('phoneError', 'Введите корректный номер телефона');
         return false;
     }
 
-    // Проверяем, что номер начинается с 7 или 8
     if (!digitsOnly.startsWith('7') && !digitsOnly.startsWith('8')) {
         showError('phoneError', 'Номер должен начинаться с 7 или 8');
         return false;
     }
 
     clearError('phoneError');
+    showSuccess('phone');
     return true;
 }
 
-export function validateEmail(email) {
+export function validateEmail() {
     const emailInput = document.getElementById('email');
     const emailValue = emailInput.value.trim();
 
@@ -92,15 +92,13 @@ export function validateEmail(email) {
         return false;
     }
 
-    // Проверка на английские буквы, цифры, точки, дефисы и наличие @ с доменом
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-    if (!emailRegex.test(emailValue)) {
+    if (!validateEmailFormat(emailValue)) {
         showError('emailError', 'Введите корректный email (только латинские буквы)');
         return false;
     }
 
     clearError('emailError');
+    showSuccess('email');
     return true;
 }
 
@@ -108,7 +106,6 @@ export function validateBirthDate() {
     const birthDateInput = document.getElementById('birthDate');
     const birthDateValue = birthDateInput.value;
 
-    // Дата рождения не обязательна
     if (!birthDateValue) {
         return true;
     }
@@ -118,14 +115,29 @@ export function validateBirthDate() {
     const today = new Date(currentDate);
 
     if (birthDate > today) {
-        showError('birthDateError', 'Дата рождения не может быть в будущем');
+        // Создаем элемент ошибки, если его нет
+        let errorElement = document.getElementById('birthDateError');
+        if (!errorElement) {
+            errorElement = document.createElement('div');
+            errorElement.id = 'birthDateError';
+            errorElement.className = 'validation-error';
+            birthDateInput.parentNode.appendChild(errorElement);
+        }
+        errorElement.textContent = 'Дата рождения не может быть в будущем';
+        errorElement.style.display = 'block';
+        birthDateInput.classList.add('error');
         return false;
     }
 
+    const errorElement = document.getElementById('birthDateError');
+    if (errorElement) {
+        errorElement.style.display = 'none';
+    }
+    birthDateInput.classList.remove('error');
     return true;
 }
 
-export function validateSection(section) {
+export function validateSection() {
     const sectionInput = document.getElementById('section');
     const sectionValue = sectionInput.value;
 
@@ -135,6 +147,7 @@ export function validateSection(section) {
     }
 
     clearError('sectionError');
+    showSuccess('section');
     return true;
 }
 
@@ -149,7 +162,6 @@ export function validateReport() {
 
     clearError('reportError');
 
-    // Если выбран "Да", проверяем тему доклада
     if (reportYes.checked) {
         const topicInput = document.getElementById('topic');
         const topicValue = topicInput.value.trim();
@@ -160,6 +172,13 @@ export function validateReport() {
         }
 
         clearError('topicError');
+        showSuccess('topic');
+    } else {
+        clearError('topicError');
+        const topicInput = document.getElementById('topic');
+        if (topicInput) {
+            topicInput.classList.remove('error', 'success');
+        }
     }
 
     return true;

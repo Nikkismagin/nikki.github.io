@@ -23,9 +23,16 @@ export function clearError(elementId) {
         errorElement.style.display = 'none';
         const inputElement = document.getElementById(elementId.replace('Error', ''));
         if (inputElement) {
-            inputElement.classList.remove('error');
-            inputElement.classList.add('success');
+            inputElement.classList.remove('error', 'success');
         }
+    }
+}
+
+export function showSuccess(elementId) {
+    const inputElement = document.getElementById(elementId);
+    if (inputElement) {
+        inputElement.classList.remove('error');
+        inputElement.classList.add('success');
     }
 }
 
@@ -45,4 +52,13 @@ export function formatPhoneNumber(phone) {
 
 export function formatName(name) {
     return name.trim().replace(/\s+/g, ' ').replace(/(^|\s)\S/g, l => l.toUpperCase());
+}
+
+export function validateRussianName(name) {
+    return /^[А-ЯЁа-яё\-]+$/.test(name);
+}
+
+export function validateEmailFormat(email) {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
 }

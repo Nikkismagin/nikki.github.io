@@ -3,34 +3,47 @@ import { addParticipant, updateParticipantsList, updateCounters } from './partic
 import { formatPhoneNumber } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Инициализация
+    console.log('DOM загружен, инициализация приложения...');
+
     initializeForm();
     initializePhoneMask();
     initializeReportToggle();
 
-    // Загрузка сохраненных данных
     updateParticipantsList();
     updateCounters();
 
-    // Обработчик отправки формы
     const form = document.getElementById('registrationForm');
-    form.addEventListener('submit', handleFormSubmit);
+    if (form) {
+        form.addEventListener('submit', handleFormSubmit);
+        form.addEventListener('reset', handleFormReset);
+        console.log('Обработчики формы установлены');
+    } else {
+        console.error('Форма не найдена!');
+    }
 
-    // Обработчик сброса формы
-    form.addEventListener('reset', handleFormReset);
-
-    // Реальная валидация при вводе
     setupRealTimeValidation();
+    setupAutoSave();
+
+    console.log('Приложение инициализировано');
 });
 
 function initializeForm() {
-    // Устанавливаем максимальную дату рождения как сегодня
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('birthDate').setAttribute('max', today);
+    const birthDateInput = document.getElementById('birthDate');
+    if (birthDateInput) {
+        birthDateInput.setAttribute('max', today);
+        birthDateInput.value = ''; // Очищаем значение по умолчанию
+    }
+
+    const phoneInput = document.getElementById('phone');
+    if (phoneInput && phoneInput.value === '') {
+        phoneInput.value = '+7';
+    }
 }
 
 function initializePhoneMask() {
     const phoneInput = document.getElementById('phone');
+    if (!phoneInput) return;
 
     phoneInput.addEventListener('input', function (e) {
         let value = e.target.value.replace(/\D/g, '');
@@ -42,36 +55,34 @@ function initializePhoneMask() {
         let formattedValue = '+7';
 
         if (value.length > 0) {
-            formattedValue += ' (' + value.substring(0, 3);
+            formattedValue += ' (' + value.substring(0, Math.min(3, value.length));
         }
         if (value.length >= 4) {
-            formattedValue += ') ' + value.substring(3, 6);
+            formattedValue += ') ' + value.substring(3, Math.min(6, value.length));
         }
         if (value.length >= 7) {
-            formattedValue += '-' + value.substring(6, 8);
+            formattedValue += '-' + value.substring(6, Math.min(8, value.length));
         }
         if (value.length >= 9) {
-            formattedValue += '-' + value.substring(8, 10);
+            formattedValue += '-' + value.substring(8, Math.min(10, value.length));
         }
 
         e.target.value = formattedValue;
 
-        // Устанавливаем курсор в конец
         setTimeout(() => {
             e.target.setSelectionRange(formattedValue.length, formattedValue.length);
         }, 0);
     });
 
-    // Обработка вставки
-    phoneInput.addEventListener('paste', function (e) {
-        e.preventDefault();
-        const pastedText = e.clipboardData.getData('text');
-        const digits = pastedText.replace(/\D/g, '');
+    phoneInput.addEventListener('blur', function () {
+        if (this.value === '+7' || this.value === '+7 (' || this.value === '+7 ()') {
+            this.value = '+7';
+        }
+    });
 
-        if (digits.startsWith('7') || digits.startsWith('8')) {
-            this.value = formatPhoneNumber(digits);
-        } else if (digits.length > 0) {
-            this.value = formatPhoneNumber('7' + digits);
+    phoneInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Backspace' && this.value === '+7') {
+            e.preventDefault();
         }
     });
 }
@@ -80,40 +91,57 @@ function initializeReportToggle() {
     const reportYes = document.getElementById('reportYes');
     const reportNo = document.getElementById('reportNo');
     const topicField = document.getElementById('topicField');
+    const topicInput = document.getElementById('topic');
+
+    if (!reportYes || !reportNo || !topicField) return;
 
     function toggleTopicField() {
         if (reportYes.checked) {
             topicField.style.display = 'block';
-            topicField.style.animation = 'fadeIn 0.5s ease';
+            setTimeout(() => {
+                topicField.style.opacity = '1';
+                topicField.style.transform = 'translateY(0)';
+            }, 10);
+            if (topicInput) {
+                topicInput.required = true;
+            }
         } else {
-            topicField.style.display = 'none';
+            topicField.style.opacity = '0';
+            topicField.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                topicField.style.display = 'none';
+            }, 300);
+            if (topicInput) {
+                topicInput.required = false;
+                topicInput.value = '';
+            }
         }
     }
 
     reportYes.addEventListener('change', toggleTopicField);
     reportNo.addEventListener('change', toggleTopicField);
 
-    // Инициализация при загрузке
     toggleTopicField();
 }
 
 function handleFormSubmit(e) {
     e.preventDefault();
+    console.log('Отправка формы...');
 
     if (!validateAllFields()) {
-        // Находим первую ошибку и фокусируемся на ней
+        console.log('Валидация не прошла');
         const firstError = document.querySelector('.validation-error[style*="display: block"]');
         if (firstError) {
             const inputId = firstError.id.replace('Error', '');
             const inputElement = document.getElementById(inputId);
             if (inputElement) {
                 inputElement.focus();
+                inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
         return;
     }
 
-    // Собираем данные формы
     const formData = {
         lastName: document.getElementById('lastName').value.trim(),
         firstName: document.getElementById('firstName').value.trim(),
@@ -127,94 +155,220 @@ function handleFormSubmit(e) {
             document.getElementById('topic').value.trim() : null
     };
 
-    // Добавляем участника
-    addParticipant(formData);
+    console.log('Данные формы:', formData);
 
-    // Показываем сообщение об успехе
-    alert('Регистрация прошла успешно!');
+    const newParticipant = addParticipant(formData);
+    console.log('Новый участник добавлен:', newParticipant);
 
-    // Сбрасываем форму
-    document.getElementById('registrationForm').reset();
+    showSuccessMessage();
 
-    // Скрываем поле темы доклада
-    document.getElementById('topicField').style.display = 'none';
+    form.reset();
+    document.getElementById('phone').value = '+7';
 
-    // Очищаем все ошибки
     document.querySelectorAll('.validation-error').forEach(error => {
         error.textContent = '';
         error.style.display = 'none';
     });
 
-    // Удаляем классы ошибок/успеха
     document.querySelectorAll('input, select').forEach(element => {
         element.classList.remove('error', 'success');
     });
+
+    initializeReportToggle();
 }
 
 function handleFormReset() {
-    // Очищаем все ошибки
+    console.log('Сброс формы');
+
     document.querySelectorAll('.validation-error').forEach(error => {
         error.textContent = '';
         error.style.display = 'none';
     });
 
-    // Удаляем классы ошибок/успеха
     document.querySelectorAll('input, select').forEach(element => {
         element.classList.remove('error', 'success');
     });
 
-    // Скрываем поле темы доклада
-    document.getElementById('topicField').style.display = 'none';
-
-    // Сбрасываем телефон на +7
     document.getElementById('phone').value = '+7';
+
+    const birthDateInput = document.getElementById('birthDate');
+    if (birthDateInput) {
+        birthDateInput.value = '';
+    }
+
+    initializeReportToggle();
 }
 
 function setupRealTimeValidation() {
-    // Фамилия
-    document.getElementById('lastName').addEventListener('blur', () => {
-        import('./validation.js').then(module => module.validateLastName());
+    const fields = [
+        { id: 'lastName', validator: 'validateLastName' },
+        { id: 'firstName', validator: 'validateFirstName' },
+        { id: 'middleName', validator: 'validateMiddleName' },
+        { id: 'phone', validator: 'validatePhone' },
+        { id: 'email', validator: 'validateEmail' },
+        { id: 'birthDate', validator: 'validateBirthDate' }
+    ];
+
+    fields.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.addEventListener('blur', () => {
+                import('./validation.js').then(module => {
+                    module[field.validator]();
+                });
+            });
+
+            element.addEventListener('input', () => {
+                const errorElement = document.getElementById(field.id + 'Error');
+                if (errorElement) {
+                    errorElement.textContent = '';
+                    errorElement.style.display = 'none';
+                    element.classList.remove('error');
+                }
+            });
+        }
     });
 
-    // Имя
-    document.getElementById('firstName').addEventListener('blur', () => {
-        import('./validation.js').then(module => module.validateFirstName());
-    });
+    const sectionSelect = document.getElementById('section');
+    if (sectionSelect) {
+        sectionSelect.addEventListener('change', () => {
+            import('./validation.js').then(module => {
+                module.validateSection();
+            });
+        });
+    }
 
-    // Отчество
-    document.getElementById('middleName').addEventListener('blur', () => {
-        import('./validation.js').then(module => module.validateMiddleName());
-    });
-
-    // Телефон
-    document.getElementById('phone').addEventListener('blur', () => {
-        import('./validation.js').then(module => module.validatePhone());
-    });
-
-    // Email
-    document.getElementById('email').addEventListener('blur', () => {
-        import('./validation.js').then(module => module.validateEmail());
-    });
-
-    // Дата рождения
-    document.getElementById('birthDate').addEventListener('blur', () => {
-        import('./validation.js').then(module => module.validateBirthDate());
-    });
-
-    // Секция
-    document.getElementById('section').addEventListener('change', () => {
-        import('./validation.js').then(module => module.validateSection());
-    });
-
-    // Доклад
-    document.querySelectorAll('input[name="hasReport"]').forEach(radio => {
+    const reportRadios = document.querySelectorAll('input[name="hasReport"]');
+    reportRadios.forEach(radio => {
         radio.addEventListener('change', () => {
-            import('./validation.js').then(module => module.validateReport());
+            import('./validation.js').then(module => {
+                module.validateReport();
+            });
         });
     });
 
-    // Тема доклада
-    document.getElementById('topic').addEventListener('blur', () => {
-        import('./validation.js').then(module => module.validateReport());
+    const topicInput = document.getElementById('topic');
+    if (topicInput) {
+        topicInput.addEventListener('blur', () => {
+            import('./validation.js').then(module => {
+                module.validateReport();
+            });
+        });
+
+        topicInput.addEventListener('input', () => {
+            const errorElement = document.getElementById('topicError');
+            if (errorElement) {
+                errorElement.textContent = '';
+                errorElement.style.display = 'none';
+                topicInput.classList.remove('error');
+            }
+        });
+    }
+}
+
+function setupAutoSave() {
+    const form = document.getElementById('registrationForm');
+    if (!form) return;
+
+    const formFields = form.querySelectorAll('input, select');
+    const autoSaveKey = 'conferenceFormDraft';
+
+    formFields.forEach(field => {
+        field.addEventListener('input', saveFormDraft);
+        field.addEventListener('change', saveFormDraft);
     });
+
+    function saveFormDraft() {
+        const formData = new FormData(form);
+        const data = {};
+        formData.forEach((value, key) => {
+            data[key] = value;
+        });
+
+        localStorage.setItem(autoSaveKey, JSON.stringify(data));
+    }
+
+    function loadFormDraft() {
+        const savedData = localStorage.getItem(autoSaveKey);
+        if (savedData) {
+            try {
+                const data = JSON.parse(savedData);
+                Object.keys(data).forEach(key => {
+                    const element = form.querySelector(`[name="${key}"]`);
+                    if (element) {
+                        if (element.type === 'radio') {
+                            const radio = form.querySelector(`[name="${key}"][value="${data[key]}"]`);
+                            if (radio) radio.checked = true;
+                        } else {
+                            element.value = data[key];
+                        }
+                    }
+                });
+
+                if (data.hasReport === 'yes') {
+                    initializeReportToggle();
+                }
+
+                console.log('Черновик формы загружен');
+            } catch (e) {
+                console.error('Ошибка загрузки черновика:', e);
+            }
+        }
+    }
+
+    form.addEventListener('submit', () => {
+        localStorage.removeItem(autoSaveKey);
+    });
+
+    form.addEventListener('reset', () => {
+        localStorage.removeItem(autoSaveKey);
+    });
+
+    setTimeout(loadFormDraft, 100);
+}
+
+function showSuccessMessage() {
+    const successMessage = document.createElement('div');
+    successMessage.className = 'success-message';
+    successMessage.innerHTML = `
+        <div style="
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        ">
+            <i class="fas fa-check-circle" style="margin-right: 10px;"></i>
+            Регистрация прошла успешно!
+        </div>
+    `;
+
+    document.body.appendChild(successMessage);
+
+    setTimeout(() => {
+        successMessage.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            if (successMessage.parentNode) {
+                successMessage.parentNode.removeChild(successMessage);
+            }
+        }, 300);
+    }, 3000);
+
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
 }

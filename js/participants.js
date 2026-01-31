@@ -1,10 +1,9 @@
-﻿// participants.js
-import { formatPhoneNumber, formatName } from './utils.js';
+﻿import { formatPhoneNumber, formatName } from './utils.js';
 
 let participants = JSON.parse(localStorage.getItem('conferenceParticipants')) || [];
 
 export function addParticipant(participantData) {
-    // Форматируем данные
+    participantData.id = Date.now();
     participantData.lastName = formatName(participantData.lastName);
     participantData.firstName = formatName(participantData.firstName);
     participantData.middleName = formatName(participantData.middleName);
@@ -14,6 +13,8 @@ export function addParticipant(participantData) {
     saveParticipants();
     updateParticipantsList();
     updateCounters();
+
+    return participantData;
 }
 
 export function getParticipants() {
@@ -41,8 +42,7 @@ export function updateParticipantsList() {
         return;
     }
 
-    // Отображаем последних 10 участников (самых новых)
-    const recentParticipants = participants.slice(-10).reverse();
+    const recentParticipants = participants.slice(-5).reverse();
 
     recentParticipants.forEach(participant => {
         const participantElement = document.createElement('div');
@@ -60,23 +60,20 @@ export function updateParticipantsList() {
         detailsElement.innerHTML = `
             <div>${participant.email}</div>
             <div>${participant.phone}</div>
-            ${participant.birthDate ? `<div>Дата рождения: ${participant.birthDate}</div>` : ''}
-            ${participant.hasReport === 'yes' ? `<div>Тема доклада: ${participant.topic}</div>` : ''}
+            ${participant.birthDate ? `<div>${formatDate(participant.birthDate)}</div>` : ''}
+            ${participant.hasReport === 'yes' && participant.topic ? `<div style="margin-top: 5px;"><strong>Доклад:</strong> ${participant.topic}</div>` : ''}
         `;
 
         const sectionElement = document.createElement('div');
         sectionElement.className = 'participant-section';
 
-        // Преобразуем значение секции в читаемый вид
-        let sectionName = '';
-        switch (participant.section) {
-            case 'mathematics': sectionName = 'Математика'; break;
-            case 'physics': sectionName = 'Физика'; break;
-            case 'informatics': sectionName = 'Информатика'; break;
-            default: sectionName = participant.section;
-        }
+        const sectionNames = {
+            'mathematics': 'Математика',
+            'physics': 'Физика',
+            'informatics': 'Информатика'
+        };
 
-        sectionElement.textContent = sectionName;
+        sectionElement.textContent = sectionNames[participant.section] || participant.section;
 
         participantInfo.appendChild(nameElement);
         participantInfo.appendChild(detailsElement);
@@ -88,10 +85,31 @@ export function updateParticipantsList() {
     });
 }
 
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+}
+
 export function updateCounters() {
     const totalElement = document.getElementById('totalParticipants');
     const withReportsElement = document.getElementById('withReports');
 
-    totalElement.textContent = getParticipantsCount();
-    withReportsElement.textContent = getParticipantsWithReportsCount();
+    if (totalElement) {
+        totalElement.textContent = getParticipantsCount();
+    }
+
+    if (withReportsElement) {
+        withReportsElement.textContent = getParticipantsWithReportsCount();
+    }
+}
+
+export function clearParticipants() {
+    participants = [];
+    saveParticipants();
+    updateParticipantsList();
+    updateCounters();
 }
